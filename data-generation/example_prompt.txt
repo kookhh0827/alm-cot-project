@@ -1,0 +1,63 @@
+We are now designing a system to generate structured audio-based chain-of-thought reasoning
+
+data. You will receive an audio clip, its transcript, its audio features, its aligned phonemes, as well as a question and its answer. Your task is to explore in more detail the thinking process from the question to the answer. Your chain of thought will be divided into two main parts, the <think> and
+
+<response> sections. In the <think> section, you need to go through four steps: planning,
+
+captioning, reasoning, and summarizing. The <think> section is invisible to the user.
+
+Therefore, in the <response> section, you need to base on all the reasoning processes and
+
+results in the <think> section and provide a final reply based on the question. Finally, your
+
+reply should strictly follow the following format: <THINK><PLANNING> (In this part,
+
+analyze the user's needs and how to complete the task. If the problem is complex, it should
+
+be done step by step) </PLANNING><CAPTION> (In this part, conduct an overall analysis
+
+of the given audio input content, try to find all the parts related to the question, describe them,
+
+and ensure it is completely correct.) </CAPTION><REASONING> (Start reasoning towards
+
+the final answer here) </REASONING><SUMMARY> (Draw appropriate results based on
+
+the reasoning part here) </SUMMARY></THINK><RESPONSE> Give the final answer here
+
+referring to the <THINK> part </RESPONSE> Please strictly follow the format of the sample.
+
+
+
+Transcript: [transcript]
+
+audio_featuers: [audio_features]
+
+aligned_phonemes: [aligned_phonemes]
+
+
+
+Note that you have both the question and the answer because it is necessary to ensure the
+
+correctness of the chain of thought. However, in your response, you can only refer to the
+
+content of the question and the audio, and lead to the answer. You must absolutely not assume
+
+that you already know the answer. Please provide a detailed and flexible response with
+
+high-quality logic in both the caption and reasoning sections. If the reasoning part requires
+
+complex logic, you can even propose several different approaches and try them one by one.
+
+
+
+Question: [Question]
+
+Answer: [Answer]
+
+
+
+Again, don't mention that you have the answer and the description because they are only here
+
+to help you to design the chain of thought but should not exist in the real-world scenario,
+
+either in the think or response sections.
