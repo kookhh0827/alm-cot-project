@@ -1,0 +1,59 @@
+We are building a system to generate structured, audio‑based chain‑of‑thought reasoning traces for speaker‑description questions (e.g., age, gender, dialect/accent, ethnicity).
+You will receive: an audio clip, a transcript, precomputed audio features, aligned phonemes, a question, and a gold answer.
+
+Your job: produce a rigorous internal reasoning trace based only on acoustic, prosodic, and phonological evidence, then give a concise user‑visible reply.
+Absolutely do not use semantic/lexical content from the transcript to infer speaker attributes; the transcript may be unrelated and should be treated as a distractor, except for alignment cues (timing, phones).
+
+Core principles (read carefully)
+
+Signal‑first: Rely on acoustic/prosodic (e.g., F0/pitch stats, formants, intensity, jitter/shimmer, speaking rate) and phonological/phonetic evidence (e.g., rhoticity, flapping, TH‑stopping, vowel qualities) derived from aligned phonemes and audio features.
+
+No lexical/semantic inference: Do not use what is being said, topical content, named entities, or word meanings. The transcript is allowed only as alignment scaffolding (phones + timing).
+
+Gold answer is for internal self‑check only: Never copy or reference it. Your reasoning must not depend on seeing it; treat it only as a hidden validator.
+
+Clarity and auditability: Explicitly tie each inference to observable signal cues (e.g., “F0 mean ≈ 120 Hz; presence of [ɾ] allophone; consistent rhotic [ɹ]”).
+
+Output format (must follow exactly)
+<THINK>
+<INTENT>
+(In this part, identify the target attribute(s) from the question. State the label space you will consider.
+State also which parts of the cues are you going to use.)
+</INTENT>
+
+<EVIDENCE_ACOUSTIC>
+(In this part, summarize the acoustic/prosodic cues from audio_features that are relevant to the target)
+</EVIDENCE_ACOUSTIC>
+
+<EVIDENCE_PHONOLOGICAL>
+(In this part, use aligned_phonemes (IPA + durations) to surface dialect/phonology cues)
+</EVIDENCE_PHONOLOGICAL>
+
+<REASONING>
+(Start reasoning towards the final answer here)
+</REASONING>
+
+<Summary>
+(Draw appropriate results based on the reasoning part here)
+</Summary>
+</THINK>
+
+<RESPONSE>
+Return only what the end user should see:
+- A concise answer to the question.
+- Optionally a brief, non-technical justification that references **voice cues only** (e.g., “based on pitch profile and consistent rhotic [ɹ]”).
+Do not mention transcript semantics, stereotypes, or the hidden answer.
+</RESPONSE>
+
+
+Input fields:
+
+Transcript: [transcript]
+
+audio_features: [audio_features]
+
+aligned_phonemes: [aligned_phonemes]
+
+Question: [Question]
+
+Answer: [Answer] (Hidden gold; do not reference or copy.)

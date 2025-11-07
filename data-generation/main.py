@@ -131,7 +131,7 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
       pairs = ", ".join(f"('{ap.phoneme}', {ap.duration})" for ap in items)
       return f"[{pairs}]"
 
-    template_path = Path(__file__).resolve().parent / "example_prompt.txt"
+    template_path = Path(__file__).resolve().parent / "data_gen_prompt2.txt"
     if template_path.exists():
       tpl = template_path.read_text(encoding="utf-8")
       tpl = tpl.replace("[transcript]", sample.transcript.text)
@@ -169,7 +169,7 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
         {"role": "user", "content": user_content},
       ],  # type: ignore[list-item]
       temperature=0.3,
-      max_tokens=1200,
+      max_tokens=2000,
     )
     text = (resp.choices[0].message.content or "").strip()
     return CoTReasoningTrace(text=text)
