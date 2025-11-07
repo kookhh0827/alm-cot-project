@@ -22,11 +22,13 @@ State also which parts of the cues are you going to use.)
 </INTENT>
 
 <EVIDENCE_ACOUSTIC>
-(In this part, summarize the acoustic/prosodic cues from audio_features that are relevant to the target)
+(In this part, summarize the acoustic/prosodic cues from audio_features that are relevant to the question.
+Here, never related evidence to any of the label space yet.)
 </EVIDENCE_ACOUSTIC>
 
 <EVIDENCE_PHONOLOGICAL>
-(In this part, use aligned_phonemes (IPA + durations) to surface dialect/phonology cues)
+(In this part, use aligned_phonemes (IPA + durations) to surface dialect/phonology cues.
+Here, never related evidence to any of the label space yet.)
 </EVIDENCE_PHONOLOGICAL>
 
 <REASONING>
