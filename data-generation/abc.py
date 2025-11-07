@@ -9,6 +9,7 @@ from .schema import (
   Audio,
   AudioFeatures,
   CoTReasoningTrace,
+  ValidationResult,
   DatasetItem,
   ProcessedSample,
   Question,
@@ -43,6 +44,12 @@ class AbstractAlignedPhonemesExtractor(ABC):
 class AbstractTrainingDataGenerator(ABC):
   @abstractmethod
   def generate(self, sample: ProcessedSample) -> CoTReasoningTrace:
+    pass
+
+
+class AbstractDataValidator(ABC):
+  @abstractmethod
+  def validate(self, sample: ProcessedSample, trace: CoTReasoningTrace) -> ValidationResult:
     pass
 
 

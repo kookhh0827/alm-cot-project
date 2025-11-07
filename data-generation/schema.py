@@ -63,3 +63,9 @@ class CoTReasoningTrace:
   text: str
 
 
+@dataclass
+class ValidationResult:
+  text: str
+  is_valid: Optional[bool] = None
+  score: Optional[float] = None
+

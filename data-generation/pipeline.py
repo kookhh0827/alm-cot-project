@@ -9,12 +9,14 @@ from .abc import (
   AbstractDatasetProcessor,
   AbstractSTTExtractor,
   AbstractTrainingDataGenerator,
+  AbstractDataValidator,
 )
 from .schema import (
   AlignedPhonemes,
   Audio,
   AudioFeatures,
   CoTReasoningTrace,
+  ValidationResult,
   DatasetItem,
   ProcessedSample,
   Transcript,
@@ -34,6 +36,7 @@ class DataGenPipeline:
     audio_feat_extractor: AbstractAudioFeatExtractor,
     aligned_phonemes_extractor: AbstractAlignedPhonemesExtractor,
     training_data_generator: AbstractTrainingDataGenerator,
+    validator: Optional[AbstractDataValidator] = None,
     stt_extractor: Optional[AbstractSTTExtractor] = None,
     config: Optional[PipelineConfig] = None,
   ) -> None:
@@ -41,6 +44,7 @@ class DataGenPipeline:
     self.audio_feat_extractor = audio_feat_extractor
     self.aligned_phonemes_extractor = aligned_phonemes_extractor
     self.training_data_generator = training_data_generator
+    self.validator = validator
     self.stt_extractor = stt_extractor
     self.config = config or PipelineConfig()
 
@@ -74,11 +78,14 @@ class DataGenPipeline:
         aligned_phonemes=aligned_phonemes,
       )
 
-  def run(self, dataset: Any) -> List[Tuple[ProcessedSample, CoTReasoningTrace]]:
-    results: List[Tuple[ProcessedSample, CoTReasoningTrace]] = []
+  def run(self, dataset: Any) -> List[Tuple[ProcessedSample, CoTReasoningTrace, Optional[ValidationResult]]]:
+    results: List[Tuple[ProcessedSample, CoTReasoningTrace, Optional[ValidationResult]]] = []
     for sample in self.iter_processed(dataset):
       trace = self.training_data_generator.generate(sample)
-      results.append((sample, trace))
+      validation: Optional[ValidationResult] = None
+      if self.validator is not None:
+        validation = self.validator.validate(sample, trace)
+      results.append((sample, trace, validation))
     return results
 
 
