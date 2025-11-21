@@ -88,7 +88,7 @@ class TestAlignedPhonemesExtractor(AbstractAlignedPhonemesExtractor):
 
 
 class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
-  def __init__(self, model: str = "gpt-4o-audio-preview") -> None:
+  def __init__(self, model: str = "") -> None:
     # Lazy import to avoid hard dependency when not used
     from openai import OpenAI  # type: ignore
     self._client = OpenAI(api_key="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")
@@ -158,11 +158,11 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
     user_content: List[Dict[str, Any]] = [
       {"type": "text", "text": user_text}
     ]
-    if audio_b64:
-      user_content.append({
-        "type": "input_audio",
-        "input_audio": {"data": audio_b64, "format": audio_fmt},
-      })
+    # if audio_b64:
+    #   user_content.append({
+    #     "type": "input_audio",
+    #     "input_audio": {"data": audio_b64, "format": audio_fmt},
+    #   })
 
     resp = self._client.chat.completions.create(
       model=self._model,
@@ -171,13 +171,13 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
         {"role": "user", "content": user_content},
       ],  # type: ignore[list-item]
       temperature=0.3,
-      max_tokens=2000,
+      max_completion_tokens=2000,
     )
     text = (resp.choices[0].message.content or "").strip()
     return CoTReasoningTrace(text=text)
 
 class OpenAIDataValidator(AbstractDataValidator):
-  def __init__(self, model: str = "gpt-4o-audio-preview") -> None:
+  def __init__(self, model: str = "") -> None:
     from openai import OpenAI  # type: ignore
     self._client = OpenAI(api_key="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")
     self._model = model
@@ -239,11 +239,11 @@ class OpenAIDataValidator(AbstractDataValidator):
     user_content: List[Dict[str, Any]] = [
       {"type": "text", "text": user_text}
     ]
-    if audio_b64:
-      user_content.append({
-        "type": "input_audio",
-        "input_audio": {"data": audio_b64, "format": audio_fmt},
-      })
+    # if audio_b64:
+    #   user_content.append({
+    #     "type": "input_audio",
+    #     "input_audio": {"data": audio_b64, "format": audio_fmt},
+    #   })
 
     resp = self._client.chat.completions.create(
       model=self._model,
@@ -251,8 +251,8 @@ class OpenAIDataValidator(AbstractDataValidator):
         {"role": "system", "content": sys_prompt},
         {"role": "user", "content": user_content},
       ],
-      temperature=0.2,
-      max_tokens=1000,
+      # temperature=0.2,
+      max_completion_tokens=1000,
     )
     text = (resp.choices[0].message.content or "").strip()
     lowered = text.lower()
@@ -274,8 +274,8 @@ def build_pipeline() -> DataGenPipeline:
   )
   audio_feat_extractor = TestAudioFeatExtractor(tests_vals.get("audio_featuers", {}))
   aligned_phonemes_extractor = TestAlignedPhonemesExtractor(tests_vals.get("aligned_phonemes", []))
-  training_data_generator = OpenAITrainingDataGenerator(model=os.getenv("OPENAI_MODEL", "gpt-audio"))
-  validator = OpenAIDataValidator(model=os.getenv("OPENAI_VALIDATION_MODEL", "gpt-audio"))
+  training_data_generator = OpenAITrainingDataGenerator(model=os.getenv("OPENAI_MODEL", "gpt-5.1-2025-11-13"))
+  validator = OpenAIDataValidator(model=os.getenv("OPENAI_VALIDATION_MODEL", "gpt-5.1-2025-11-13"))
   config = PipelineConfig(force_stt=False, use_stt_if_missing=False)
 
   return DataGenPipeline(

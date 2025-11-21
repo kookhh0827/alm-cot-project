@@ -19,8 +19,8 @@ meta_data = {
   "weight": "160 - 180 lbs"
 }
 
-question = "What is the ethnicity of the speaker?"
-answer = "black or african american"
+question = "What is the dialect/accent of the speaker?"
+answer = "North American English"
 
 
 audio = Audio(path=Path("data-generation/freeform_speech_06_16k_chunk001.wav"))

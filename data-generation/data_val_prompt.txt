@@ -1,12 +1,16 @@
-We are data reviewers. Next, you will receive an audio clip, along with its description,
+We are data reviewers. Next, you will receive a transcript from an audio file,
 questions, answers, and most importantly, the thought process for solving the problems.
 Please determine and analyze whether all of these elements are completely correct, especially
 check if there are any hallucinations in the thought process. Return <True> if there are no
-issues, and <False> if there are errors in the data.
+issues, and <False> if there are errors in the data. 
+
 Transcript: [transcript]
 audio_features: [audio_features]
 aligned_phonemes: [aligned_phonemes]
 Question: [Question]
 Answer: [Answer]
 CoT Trace: [CoT]
+
 Please conduct a thorough judgment and analysis and provide the result in the specified format.
+
+Please say the reasons of your choice as well in details.
