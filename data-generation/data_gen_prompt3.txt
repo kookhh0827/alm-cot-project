@@ -1,0 +1,81 @@
+You must produce a structured speaker-descriptor CoT trace.
+You will receive transcript, audio_features, and aligned_phonemes.
+
+Your output must have FOUR blocks, in this exact order:
+
+1) <ACOUSTIC_SUMMARY> 
+   - Extract and restate acoustic descriptors in structured form:
+     pitch_mean, pitch_median, pitch_range, pitch_std,
+     hnr_mean, energy_mean, energy_range,
+     formant means (F1_mean, F2_mean, F3_mean),
+   - Do NOT interpret or infer labels here. Only report data.
+
+2) <PHONOLOGY_SUMMARY>
+   - Summarize phonological statistics from aligned_phonemes:
+     reduced_vowel_ratio, rhoticity_ratio,
+     mean_vowel_duration, syllabic_consonants,
+     stress_timing pattern.
+   - Do NOT interpret or infer labels here. Only report data.
+
+3) <REASONING_SUMMARY>
+   - Using ONLY the above summaries, reason toward the target attribute.
+   - MUST use uncertainty-aware language.
+   - MUST list candidate categories and relative evidence strength:
+       age_group_candidates + evidence_strength
+       dialect_candidates + relative likelihood
+       gender_candidates + evidence_strength
+   - No transcript semantics.
+   - No confident claims beyond the structured evidence.
+
+4) <FINAL_ANSWER>
+   - Give the final classification for the question (age/gender/dialect).
+   - Keep it short.
+   - Optional 1-line justification referencing ONLY the structured evidence.
+
+All four blocks must appear. No free-form paragraphs allowed outside them.
+
+--------------------------------
+Input fields
+--------------------------------
+
+Transcript: [transcript]
+
+audio_features: [audio_features]
+
+aligned_phonemes: [aligned_phonemes]
+
+Question: [Question]
+
+Answer: [Answer] (Hidden gold; do not reference or copy.)
+
+--------------------------------
+Example Output
+--------------------------------
+
+<ACOUSTIC_SUMMARY>
+pitch: {mean: X, median: Y, range: Z, std: A}
+hnr: {mean: X}
+energy: {mean: X, range: X}
+formants: {F1_mean: X, F2_mean: Y, F3_mean: Z}
+</ACOUSTIC_SUMMARY>
+
+<PHONOLOGY_SUMMARY>
+rhoticity: {ratio: X}
+vowel_reduction_ratio: X
+mean_vowel_duration: X
+syllabic_consonants: True/False
+stress_timing: "regular" | "mixed" | "irregular"
+</PHONOLOGY_SUMMARY>
+
+<REASONING_SUMMARY>
+age_group_candidates: [child, young_adult, mid_adult, older_adult]
+age_evidence_strength: {child: low, young_adult: medium, mid: high, older: low}
+
+gender_candidates: [...]
+dialect_candidates: [...]
+uncertainty_notes: "..."
+</REASONING_SUMMARY>
+
+<FINAL_ANSWER>
+...
+</FINAL_ANSWER>

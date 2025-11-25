@@ -133,7 +133,7 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
       pairs = ", ".join(f"('{ap.phoneme}', {ap.duration})" for ap in items)
       return f"[{pairs}]"
 
-    template_path = Path(__file__).resolve().parent / "data_gen_prompt2.txt"
+    template_path = Path(__file__).resolve().parent / "data_gen_prompt3.txt"
     if template_path.exists():
       tpl = template_path.read_text(encoding="utf-8")
       tpl = tpl.replace("[transcript]", sample.transcript.text)
