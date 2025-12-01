@@ -6,7 +6,7 @@ import os
 import base64
 import numpy as np  # type: ignore
 
-from .abc import (
+from data_gen_abc import (
   AbstractAlignedPhonemesExtractor,
   AbstractAudioFeatExtractor,
   AbstractDatasetProcessor,
@@ -14,8 +14,8 @@ from .abc import (
   AbstractTrainingDataGenerator,
   AbstractDataValidator,
 )
-from .pipeline import DataGenPipeline, PipelineConfig
-from .schema import (
+from pipeline import DataGenPipeline, PipelineConfig
+from schema import (
   AlignedPhoneme,
   AlignedPhonemes,
   Answer,
@@ -88,7 +88,7 @@ class TestAlignedPhonemesExtractor(AbstractAlignedPhonemesExtractor):
 
 
 class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
-  def __init__(self, model: str = "") -> None:
+  def __init__(self, model: str = "gpt-5.1-2025-11-13") -> None:
     # Lazy import to avoid hard dependency when not used
     from openai import OpenAI  # type: ignore
     self._client = OpenAI(api_key="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")
@@ -177,7 +177,7 @@ class OpenAITrainingDataGenerator(AbstractTrainingDataGenerator):
     return CoTReasoningTrace(text=text)
 
 class OpenAIDataValidator(AbstractDataValidator):
-  def __init__(self, model: str = "") -> None:
+  def __init__(self, model: str = "gpt-5.1-2025-11-13") -> None:
     from openai import OpenAI  # type: ignore
     self._client = OpenAI(api_key="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")
     self._model = model

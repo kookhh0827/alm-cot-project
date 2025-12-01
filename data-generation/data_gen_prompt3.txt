@@ -4,48 +4,54 @@ You will receive transcript, audio_features, and aligned_phonemes.
 Your output must have FOUR blocks, in this exact order:
 
 1) <ACOUSTIC_SUMMARY> 
-   - Extract and restate acoustic descriptors in structured form:
-     pitch_mean, pitch_median, pitch_range, pitch_std,
-     hnr_mean, energy_mean, energy_range,
-     formant means (F1_mean, F2_mean, F3_mean),
-   - Do NOT interpret or infer labels here. Only report data.
+- Extract and restate acoustic descriptors in structured form ONLY:
+  pitch_mean, pitch_median, pitch_range, pitch_std,
+  hnr_mean, energy_mean, energy_range,
+  F1_mean, F2_mean, F3_mean.
+- No interpretation or category inference.
 
 2) <PHONOLOGY_SUMMARY>
-   - Summarize phonological statistics from aligned_phonemes:
-     reduced_vowel_ratio, rhoticity_ratio,
-     mean_vowel_duration, syllabic_consonants,
-     stress_timing pattern.
-   - Do NOT interpret or infer labels here. Only report data.
+- Summarize phonological descriptors from aligned_phonemes ONLY:
+  rhoticity_ratio, vowel_reduction_ratio,
+  mean_vowel_duration, syllabic_consonants,
+  stress_timing.
+- No interpretation or category inference.
 
 3) <REASONING_SUMMARY>
-   - Using ONLY the above summaries, reason toward the target attribute.
-   - MUST use uncertainty-aware language.
-   - MUST list candidate categories and relative evidence strength:
-       age_group_candidates + evidence_strength
-       dialect_candidates + relative likelihood
-       gender_candidates + evidence_strength
-   - No transcript semantics.
-   - No confident claims beyond the structured evidence.
+- Using ONLY the two summaries above, reason toward the target attribute.
+- MUST include:
+  - age_group_candidates + evidence_strength
+  - gender_candidates + evidence_strength
+  - dialect_candidates + relative likelihood
+- MUST use uncertainty-aware language
+  (e.g., “more compatible with…”, “weak cue…”, “neighboring categories also possible”).
+- No transcript semantics. 
+- No confident claims beyond structured evidence.
 
 4) <FINAL_ANSWER>
-   - Give the final classification for the question (age/gender/dialect).
-   - Keep it short.
-   - Optional 1-line justification referencing ONLY the structured evidence.
+You MUST follow this EXACT template:
+Because of the combination of <key trait 1>, <key trait 2>, ...,
+the speaker is most consistent with: <FINAL LABEL HERE>"
 
-All four blocks must appear. No free-form paragraphs allowed outside them.
+Rules:
+- Fill the angle-bracket values using ONLY the structured summaries.
+- No new acoustic or phonological facts may be invented.
+- The final label must directly answer the user’s question.
+- Keep the result concise.
 
---------------------------------
+-----------------------------------------
+
+All four blocks must appear. 
+No free-form paragraphs outside them.
+
+-----------------------------------------
 Input fields
---------------------------------
+-----------------------------------------
 
 Transcript: [transcript]
-
 audio_features: [audio_features]
-
 aligned_phonemes: [aligned_phonemes]
-
 Question: [Question]
-
 Answer: [Answer] (Hidden gold; do not reference or copy.)
 
 --------------------------------
@@ -60,19 +66,26 @@ formants: {F1_mean: X, F2_mean: Y, F3_mean: Z}
 </ACOUSTIC_SUMMARY>
 
 <PHONOLOGY_SUMMARY>
-rhoticity: {ratio: X}
-vowel_reduction_ratio: X
-mean_vowel_duration: X
-syllabic_consonants: True/False
+rhoticity_ratio: "high" | "medium" | "low"
+vowel_reduction_ratio: "high" | "medium" | "low"
+mean_vowel_duration: "high" | "medium" | "low"
+syllabic_consonants: Present | Absent
 stress_timing: "regular" | "mixed" | "irregular"
 </PHONOLOGY_SUMMARY>
 
 <REASONING_SUMMARY>
-age_group_candidates: [child, young_adult, mid_adult, older_adult]
-age_evidence_strength: {child: low, young_adult: medium, mid: high, older: low}
+age_group_candidates: [18-25, 26-35, 36-45, 46-55, 56-65, 66-75]
+age_evidence_strength: {18-25: "high" | "medium" | "low", 26-35: ...}
+- Reasoning: ...
 
-gender_candidates: [...]
-dialect_candidates: [...]
+gender_candidates: [male, female]
+gender_evidence_strength: {male: "high" | "medium" | "low", female: "high" | "medium" | "low"}
+- Reasoning: ...
+
+dialect_candidates: [New England, Northen, North Midland, South Midland, Southern, New York City, Western, Army Brat] (Include all the candidates)
+dialect_evidence_strength: {New England: "high" | "medium" | "low", ...}
+- Reasoning: ...
+
 uncertainty_notes: "..."
 </REASONING_SUMMARY>
 

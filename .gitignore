@@ -3,6 +3,17 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# wandb and its subdirectories
+wandb/
+wandb/**
+wandb/**/**
+wandb/**/**/**
+wandb/**/**/**/**
+wandb/**/**/**/**/**
+wandb/**/**/**/**/**/**
+wandb/**/**/**/**/**/**/**
+wandb/**/**/**/**/**/**/**/**
+
 # C extensions
 *.so
 

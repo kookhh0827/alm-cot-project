@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Generator, Iterable, Iterator, Optional
 
-from .schema import (
+from schema import (
   AlignedPhonemes,
   Answer,
   Audio,

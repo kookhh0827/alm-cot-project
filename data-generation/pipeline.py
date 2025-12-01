@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterator, List, Optional, Tuple
 
-from .abc import (
+from data_gen_abc import (
   AbstractAlignedPhonemesExtractor,
   AbstractAudioFeatExtractor,
   AbstractDatasetProcessor,
@@ -11,7 +11,7 @@ from .abc import (
   AbstractTrainingDataGenerator,
   AbstractDataValidator,
 )
-from .schema import (
+from schema import (
   AlignedPhonemes,
   Audio,
   AudioFeatures,

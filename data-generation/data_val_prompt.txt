@@ -12,5 +12,3 @@ Answer: [Answer]
 CoT Trace: [CoT]
 
 Please conduct a thorough judgment and analysis and provide the result in the specified format.
-
-Please say the reasons of your choice as well in details.
