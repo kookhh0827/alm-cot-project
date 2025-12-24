@@ -131,10 +131,26 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 def train():
     # 1. Load model and processor
     print("Loading model and processor...")
+    
+    # Check if running in distributed mode (DDP)
+    world_size = int(os.environ.get("WORLD_SIZE", 1))
+    local_rank = int(os.environ.get("LOCAL_RANK", -1))
+    
+    # Use "auto" for single-process (Model Parallelism), None for DDP (Trainer handles placement)
+    device_map = "auto"
+    if world_size > 1:
+        device_map = None
+        # In DDP, ensure we use the correct device for the process if needed explicitly, 
+        # but Trainer usually handles moving model to device.
+        # However, for Qwen/large models, loading to CPU first then moving might be slow/OOM on CPU.
+        # Often it's better to specify device_map={"": local_rank} or rely on Trainer.
+        # With Trainer + accelerate, device_map=None is safest for standard DDP.
+        print(f"Distributed training detected (World Size: {world_size}). Disabling device_map='auto' for DDP.")
+
     processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
     model = Qwen2AudioForConditionalGeneration.from_pretrained(
         MODEL_ID,
-        device_map="auto",
+        device_map=device_map,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
     )
@@ -159,6 +175,8 @@ def train():
 
     # Enable gradient checkpointing -> disable cache
     model.config.use_cache = False
+
+    print("Loading dataset...")
 
     # 3. Load dataset
     dataset = load_tears_dataset()
@@ -279,7 +297,8 @@ def train():
 
     # 5. Apply preprocessing to train/test splits
     num_proc = 4  # Adjust based on CPU cores
-
+    
+    print("Preprocessing train dataset...")
     train_dataset = dataset["train"].map(
         prepare_dataset,
         batched=True,
@@ -288,6 +307,7 @@ def train():
         # num_proc=num_proc,
     )
 
+    print("Preprocessing test dataset...")
     test_dataset = dataset["test"].map(
         prepare_dataset,
         batched=True,
@@ -331,7 +351,16 @@ def train():
 
     # 8. Train
     print("Starting training...")
-    trainer.train()
+
+    # Auto-resume from checkpoint if exists
+    resume_from_checkpoint = None
+    if os.path.isdir(OUTPUT_DIR):
+        checkpoints = [d for d in os.listdir(OUTPUT_DIR) if d.startswith("checkpoint-")]
+        if checkpoints:
+            resume_from_checkpoint = True
+            print(f"Found existing checkpoints in {OUTPUT_DIR}. Resuming from latest checkpoint.")
+
+    trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
     # 9. Save final model and processor
     print(f"Saving model to {OUTPUT_DIR}")

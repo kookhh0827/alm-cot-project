@@ -1,14 +1,86 @@
-We are data reviewers. Next, you will receive a transcript from an audio file,
-questions, answers, and most importantly, the thought process for solving the problems.
-Please determine and analyze whether all of these elements are completely correct, especially
-check if there are any hallucinations in the thought process. Return <True> if there are no
-issues, and <False> if there are errors in the data. 
+You are a deterministic validator. Do NOT invent your own rules.
 
-Transcript: [transcript]
-audio_features: [audio_features]
-aligned_phonemes: [aligned_phonemes]
-Question: [Question]
-Answer: [Answer]
-CoT Trace: [CoT]
+You will be given:
+- QUESTION (target attribute)
+- CANDIDATES (allowed final labels)
+- LATENT_JSON (allowed evidence traits as discrete key/value pairs)
+- MODEL_OUTPUT (text with <THINK> and <RESPONSE> blocks)
 
-Please conduct a thorough judgment and analysis and provide the result in the specified format.
+Your job:
+Return JSON ONLY following this schema:
+
+{
+  "checks": {
+    "format_blocks_present": boolean,
+    "response_one_sentence": boolean,
+    "no_numbers_or_units": boolean,
+    "label_in_candidates": boolean,
+    "answers_target_attribute_only": boolean,
+    "uses_only_latent_traits": boolean,
+    "traits_match_latent_values": boolean,
+    "no_transcript_semantics": boolean,
+    "no_stereotype_or_disallowed_inference": boolean,
+    "uncertainty_tone_ok": boolean,
+    "reasoning_sufficient": boolean
+  },
+  "violations": [
+    {"rule": string, "evidence": string}
+  ],
+  "repair_instruction": string
+}
+
+Rules to apply:
+
+1) format_blocks_present:
+- MODEL_OUTPUT must contain exactly one <THINK>...</THINK> and one <RESPONSE>...</RESPONSE> block.
+
+2) response_one_sentence:
+- The content inside <RESPONSE> must be exactly ONE sentence following the pattern: "Based on features such as ..., the speaker is most consistent with: LABEL."
+
+3) no_numbers_or_units:
+- MODEL_OUTPUT must contain no digits (0-9) and no units like Hz, ms, %, "mean", "std", "median", "variance", "range".
+- EXCEPTION: Digits ARE EXPLICITLY ALLOWED if they are part of a valid label in CANDIDATES (e.g., "18-25", "46-55"). DO NOT flag these as violations.
+
+4) label_in_candidates:
+- The final label in <RESPONSE> must be one of CANDIDATES.
+
+5) answers_target_attribute_only:
+- The final label must answer the QUESTION's target attribute only (age/gender/dialect/ethnicity).
+
+6) uses_only_latent_traits:
+- Any evidence mentioned must be expressed ONLY as key=value pairs present in LATENT_JSON.
+- No new traits may be introduced.
+
+7) traits_match_latent_values:
+- If a key=value pair is mentioned, it must match the exact value in LATENT_JSON.
+
+8) no_transcript_semantics:
+- Must not reference transcript content, named entities, topics, or semantics.
+
+9) no_stereotype_or_disallowed_inference:
+- Must avoid harmful, offensive, or derogatory stereotypes.
+- CRITICAL EXCEPTION: This is a scientific classification task. Direct inference of demographic attributes based on acoustic/linguistic traits is REQUIRED. Statements linking traits to specific groups are ALLOWED.
+
+10) uncertainty_tone_ok:
+- Wording should use "consistent with" or "suggests" rather than absolute certainty.
+
+11) reasoning_sufficient:
+- The reasoning must use AT LEAST TWO (and up to 4) distinct traits from LATENT_JSON.
+- For Dialect/Ethnicity, prefer PHONOLOGY traits (vowel_space, rhoticity, etc.) over simple acoustic stats if available.
+
+Return:
+- checks filled with true/false.
+- violations listing each failed rule with a short quote or description.
+- repair_instruction: one concise instruction to fix the output.
+
+QUESTION:
+{question}
+
+CANDIDATES:
+{candidates}
+
+LATENT_JSON:
+{latent_json}
+
+MODEL_OUTPUT:
+{model_output}
