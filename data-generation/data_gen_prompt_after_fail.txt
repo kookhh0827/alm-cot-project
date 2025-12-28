@@ -21,6 +21,12 @@ LATENT DEFINITIONS (Reference):
 - vowel_ratio: Proportion of vowel sounds (high, low).
 - syllabic_consonants: Presence of syllabic consonants (present, absent).
 
+PREVIOUS ATTEMPT FAILED.
+The validator rejected your previous output for the following reason:
+{fail_reason}
+
+Please fix the error and try again. Focus on adhering strictly to the constraints.
+
 Question: {question}
 Answer: {answer}
 

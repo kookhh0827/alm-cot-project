@@ -6,6 +6,20 @@ You will be given:
 - LATENT_JSON (allowed evidence traits as discrete key/value pairs)
 - MODEL_OUTPUT (text with <THINK> and <RESPONSE> blocks)
 
+LATENT DEFINITIONS (Reference):
+- f0_level: Perception of pitch height (low, mid, high).
+- f0_range: Variability of pitch (low, mid, high).
+- pitch_contour: The overall pattern of pitch change (rising, falling, flat).
+- energy_level: Perceived loudness/volume (low, mid, high).
+- energy_dynamics: The range of volume variability (high, low).
+- voice_tone: Perceived vocal quality (creaky, hoarse, modal, clear).
+- speaking_rate: Speed of articulation (slow, mid, fast).
+- pause_frequency: Frequency of pauses (rare, mid, frequent).
+- rhotic_ratio: Degree of "r-sound" pronunciation (high, low).
+- diphthong_index: Degree of vowel gliding (high, low).
+- vowel_ratio: Proportion of vowel sounds (high, low).
+- syllabic_consonants: Presence of syllabic consonants (present, absent).
+
 Your job:
 Return JSON ONLY following this schema:
 
@@ -20,6 +34,7 @@ Return JSON ONLY following this schema:
     "traits_match_latent_values": boolean,
     "no_transcript_semantics": boolean,
     "no_stereotype_or_disallowed_inference": boolean,
+    "scientific_validity": boolean,
     "uncertainty_tone_ok": boolean,
     "reasoning_sufficient": boolean
   },
@@ -38,7 +53,7 @@ Rules to apply:
 - The content inside <RESPONSE> must be exactly ONE sentence following the pattern: "Based on features such as ..., the speaker is most consistent with: LABEL."
 
 3) no_numbers_or_units:
-- MODEL_OUTPUT must contain no digits (0-9) and no units like Hz, ms, %, "mean", "std", "median", "variance", "range".
+- MODEL_OUTPUT must contain no digits (0-9) and no units like Hz, ms, %.
 - EXCEPTION: Digits ARE EXPLICITLY ALLOWED if they are part of a valid label in CANDIDATES (e.g., "18-25", "46-55"). DO NOT flag these as violations.
 
 4) label_in_candidates:
@@ -61,12 +76,18 @@ Rules to apply:
 - Must avoid harmful, offensive, or derogatory stereotypes.
 - CRITICAL EXCEPTION: This is a scientific classification task. Direct inference of demographic attributes based on acoustic/linguistic traits is REQUIRED. Statements linking traits to specific groups are ALLOWED.
 
-10) uncertainty_tone_ok:
+10) scientific_validity:
+- The reasoning must be based on PLAUSIBLE phonetic or sociolinguistic associations, not arbitrary ones.
+- REJECT obviously false generalizations (e.g., "unstable voice is exclusive to females" or "low pitch indicates child").
+- ACCEPT plausible probabilistic tendencies (e.g., "r-dropping is common in AAVE") even if not universally true.
+- Key Principle: Does the cited trait actually relate to the attribute in a way that an expert would accept as a valid potential cue?
+
+11) uncertainty_tone_ok:
 - Wording should use "consistent with" or "suggests" rather than absolute certainty.
 
-11) reasoning_sufficient:
+12) reasoning_sufficient:
 - The reasoning must use AT LEAST TWO (and up to 4) distinct traits from LATENT_JSON.
-- For Dialect/Ethnicity, prefer PHONOLOGY traits (vowel_space, rhoticity, etc.) over simple acoustic stats if available.
+- For Dialect/Ethnicity, prefer PHONOLOGY traits (rhotic_ratio, vowel_ratio, etc.) or PROSODY (pitch_contour) over simple acoustic stats.
 
 Return:
 - checks filled with true/false.

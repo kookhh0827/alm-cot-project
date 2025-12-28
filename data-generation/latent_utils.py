@@ -5,9 +5,6 @@ from typing import List, Dict, Any, Optional
 import re
 
 # --- Constants: MFA v3.1.0 English IPA Phone Set ---
-# Note: MFA output often attaches stress numbers (0, 1, 2) to vowels (e.g., "æ1").
-# The logic below strips numbers before checking membership.
-
 # 1. Monophthongs (Simple Vowels)
 MONOPHTHONGS = {
     "a", "aː", "e", "eː", "i", "iː", "o", "oː", "u", "uː", 
@@ -22,14 +19,12 @@ DIPHTHONGS = {
 
 VOWELS = MONOPHTHONGS | DIPHTHONGS
 
-# R-colored vowels + Approximant r + Flap (optional, but often acts rhotic-like)
+# R-colored vowels + Approximant r + Flap
 RHOTICS = {
     "ɹ", "ɚ", "ɝ", "ɾ" 
 }
 
-# Syllabic consonants appearing in the list (m̩)
-# Note: 'ɫ' (velarized l) is often syllabic but listed as consonant. 
-# We include 'm̩' explicitly.
+# Syllabic consonants
 SYLLABIC_CONSONANTS = {"m̩"}
 
 class LatentCalculator:
@@ -54,49 +49,27 @@ class LatentCalculator:
         """Raw feature dict -> Intermediate Scalar dict for binning"""
         scalars = {}
         
-        # --- Acoustic (V2.1 Enhanced) ---
+        # --- Acoustic Optimized ---
         scalars['f0_mean'] = features.get('pitch_mean', 0.0)
-        scalars['f0_std'] = features.get('pitch_std', 0.0)
-        
-        p_mean = features.get('pitch_mean', 0.0)
-        p_med = features.get('pitch_median', 0.0)
-        scalars['f0_skew_proxy'] = p_mean - p_med
+        scalars['f0_range'] = features.get('pitch_range', 0.0)
+        scalars['pitch_slope'] = features.get('pitch_slope', 0.0) # Intonation
         
         scalars['energy_mean'] = features.get('energy_mean', 0.0)
-        
-        e_max = features.get('energy_max', 0.0)
-        e_min = features.get('energy_min', 0.0)
-        if 'energy_dynamic_range' in features and features['energy_dynamic_range'] > 0:
-            scalars['energy_var_proxy'] = features['energy_dynamic_range']
-        else:
-            scalars['energy_var_proxy'] = e_max - e_min
+        scalars['energy_dynamic_range'] = features.get('energy_dynamic_range', 0.0)
             
-        scalars['snr_proxy'] = features.get('hnr_mean', 0.0)
-        
-        # New Acoustic: Voice Quality
+        # Voice Quality
+        # Combined "Tone" metric logic will be handled in binning, but we need raw values
+        scalars['hnr'] = features.get('hnr_mean', 0.0)
         scalars['jitter'] = features.get('jitter_local', 0.0)
         scalars['shimmer'] = features.get('shimmer_local', 0.0)
         
-        # Formants
-        f1 = features.get('F1_mean', 0.0)
-        f2 = features.get('F2_mean', 0.0)
-        
-        if f1 > 0 and f2 > 0:
-            scalars['vowel_space_scale'] = self._safe_log(f2) - self._safe_log(f1)
-        else:
-            scalars['vowel_space_scale'] = 0.0
-            
-        scalars['front_back_tilt'] = f2
-        
-        # --- Phonology (V2.1 Enhanced) ---
+        # --- Phonology Optimized ---
         clean_phones = []
         total_dur = 0.0
         silence_count = 0
         silence_dur = 0.0
         
         for p in phonemes:
-            # p.phoneme might be "æ1" or "tʃ"
-            # Strip stress numbers (0-9)
             ph_raw = p.phoneme
             ph_str = re.sub(r'[0-9]+', '', ph_raw)
             
@@ -110,29 +83,30 @@ class LatentCalculator:
             total_dur += p.duration
             
         n_phones = len(clean_phones)
-        if n_phones > 0 and total_dur > 0:
-            # phones per sec (excluding pauses) = articulation rate
-            scalars['articulation_rate'] = n_phones / total_dur
-            # sec per phone
-            scalars['mean_phone_dur'] = total_dur / n_phones
-        else:
-            scalars['articulation_rate'] = 0.0
-            scalars['mean_phone_dur'] = 0.0
+        full_duration = total_dur + silence_dur
 
-        # Ratios
+        if n_phones > 0 and total_dur > 0:
+            # Speaking Rate: phones per second (excluding pauses)
+            scalars['speaking_rate'] = n_phones / total_dur
+        else:
+            scalars['speaking_rate'] = 0.0
+
+        # Pause Frequency: pauses per second (of total time)
+        scalars['pause_rate'] = silence_count / full_duration if full_duration > 0 else 0.0
+
+        # Ratios (Critical for Dialect/Ethnicity)
         n_vowels = sum(1 for p, _ in clean_phones if p in VOWELS)
         n_rhotics = sum(1 for p, _ in clean_phones if p in RHOTICS)
         n_diphthongs = sum(1 for p, _ in clean_phones if p in DIPHTHONGS)
         
+        # Vowel Ratio: How "vowel-heavy" is the speech?
         scalars['vowel_ratio'] = n_vowels / n_phones if n_phones > 0 else 0.0
+        
+        # Rhoticity: Post-vocalic R-dropping proxy
         scalars['rhotic_ratio'] = n_rhotics / n_phones if n_phones > 0 else 0.0
         
-        # Diphthong ratio: proportion of vowels that are diphthongs
+        # Diphthong Index: Gliding vowels
         scalars['diphthong_ratio'] = n_diphthongs / n_vowels if n_vowels > 0 else 0.0
-        
-        # Pause Rate: pauses per second (of total time)
-        full_duration = total_dur + silence_dur
-        scalars['pause_rate'] = silence_count / full_duration if full_duration > 0 else 0.0
         
         # Syllabic check
         has_syllabic = any(p in SYLLABIC_CONSONANTS for p, _ in clean_phones)
@@ -160,11 +134,12 @@ class LatentCalculator:
                 stats[k] = {"q33": 0, "q66": 0}
                 continue
                 
+            # Use percentiles for robust binning
             stats[k] = {
                 "q33": float(np.percentile(arr, 33)),
                 "q66": float(np.percentile(arr, 66)),
-                "min": float(np.min(arr)),
-                "max": float(np.max(arr))
+                "median": float(np.median(arr)),
+                "std": float(np.std(arr))
             }
             
         self.stats = stats
@@ -185,6 +160,43 @@ class LatentCalculator:
         elif val <= q66: return labels[1]
         else: return labels[2]
 
+    def get_pitch_contour_label(self, slope: float) -> str:
+        # Simple thresholding for slope
+        # Slope units: Hz per frame (approx). Needs empirical check, but usually:
+        # > 0.5: rising, < -0.5: falling, else: flat
+        # We can use distribution stats if available, but absolute slope is often better for meaning.
+        # Let's use stats-based approach for consistency first.
+        
+        if 'pitch_slope' not in self.stats:
+            return "flat"
+            
+        # Slope distribution is often centered around 0.
+        # Use std dev to determine significant rise/fall.
+        std = self.stats['pitch_slope']['std']
+        median = self.stats['pitch_slope']['median']
+        
+        # If slope is > median + 0.5*std -> rising
+        if slope > median + 0.5 * std: return "rising"
+        elif slope < median - 0.5 * std: return "falling"
+        else: return "flat"
+
+    def get_voice_tone_label(self, hnr: float, jitter: float) -> str:
+        # Complex logic combining HNR (cleanliness) and Jitter (roughness)
+        # 1. Check HNR first. Low HNR = Noisy/Breathy/Hoarse
+        if 'hnr' in self.stats:
+            hnr_q33 = self.stats['hnr']['q33']
+            if hnr < hnr_q33:
+                return "hoarse" # or breathy
+        
+        # 2. Check Jitter. High Jitter = Creaky/Rough
+        if 'jitter' in self.stats:
+            jit_q66 = self.stats['jitter']['q66']
+            if jitter > jit_q66:
+                return "creaky"
+                
+        # Default
+        return "modal" # Normal/Clear
+
     def process_item(self, audio_features: Dict[str, float], aligned_phonemes: List[Any]) -> Dict[str, Any]:
         if not self.loaded:
             self.load_stats()
@@ -192,26 +204,21 @@ class LatentCalculator:
         scalars = self._compute_scalars(audio_features, aligned_phonemes)
         
         latent = {
-            "latent_version": "v2.1",
+            "latent_version": "v3.0_optimized",
             "acoustic": {
                 "f0_level": self.get_bin_label("f0_mean", scalars["f0_mean"]),
-                "f0_var": self.get_bin_label("f0_std", scalars["f0_std"]),
-                "f0_skew": self.get_bin_label("f0_skew_proxy", scalars["f0_skew_proxy"]),
+                "f0_range": self.get_bin_label("f0_range", scalars["f0_range"]), # Replaces f0_var
+                "pitch_contour": self.get_pitch_contour_label(scalars["pitch_slope"]), # New: Intonation
                 "energy_level": self.get_bin_label("energy_mean", scalars["energy_mean"]),
-                "energy_var": self.get_bin_label("energy_var_proxy", scalars["energy_var_proxy"]),
-                "snr_proxy": self.get_bin_label("snr_proxy", scalars["snr_proxy"]),
-                "voice_stability": self.get_bin_label("jitter", scalars["jitter"], ["stable", "mid", "unstable"]), # New
-                "breathiness_proxy": self.get_bin_label("shimmer", scalars["shimmer"], ["clear", "mid", "breathy"]), # New
-                "vowel_space_scale": self.get_bin_label("vowel_space_scale", scalars["vowel_space_scale"], ["small", "mid", "large"]),
-                "front_back_tilt": self.get_bin_label("front_back_tilt", scalars["front_back_tilt"], ["front", "neutral", "back"]),
+                "energy_dynamics": self.get_bin_label("energy_dynamic_range", scalars["energy_dynamic_range"]), # Replaces energy_var
+                "voice_tone": self.get_voice_tone_label(scalars["hnr"], scalars["jitter"]), # New: Replaces stability/breathiness
             },
             "phonology": {
-                "speaking_rate": self.get_bin_label("articulation_rate", scalars["articulation_rate"], ["slow", "mid", "fast"]), # Renamed metric
-                "mean_phone_dur": self.get_bin_label("mean_phone_dur", scalars["mean_phone_dur"], ["short", "mid", "long"]),
-                "pause_frequency": self.get_bin_label("pause_rate", scalars["pause_rate"], ["rare", "mid", "frequent"]), # New
+                "speaking_rate": self.get_bin_label("speaking_rate", scalars["speaking_rate"], ["slow", "mid", "fast"]),
+                "pause_frequency": self.get_bin_label("pause_rate", scalars["pause_rate"], ["rare", "mid", "frequent"]),
                 "vowel_ratio": self.get_bin_label("vowel_ratio", scalars["vowel_ratio"]),
-                "rhotic_phone_ratio": self.get_bin_label("rhotic_ratio", scalars["rhotic_ratio"]),
-                "diphthong_index": self.get_bin_label("diphthong_ratio", scalars["diphthong_ratio"], ["low", "mid", "high"]), # New
+                "rhotic_ratio": self.get_bin_label("rhotic_ratio", scalars["rhotic_ratio"]),
+                "diphthong_index": self.get_bin_label("diphthong_ratio", scalars["diphthong_ratio"], ["low", "mid", "high"]),
                 "syllabic_consonants": "present" if scalars["has_syllabic"] > 0.5 else "absent"
             }
         }
